@@ -77,5 +77,19 @@ namespace ReservasApi.Controllers
 
             return Ok(new { token = tokenHandler.WriteToken(token) });
         }
+        [HttpGet("usuarios")]
+        public async Task<IActionResult> GetUsuarios()
+        {
+            var usuarios = await _context.Usuarios
+                .Select(u => new {
+                    u.Id,
+                    u.Nombre,
+                    u.Email,
+                    u.Rol
+                })
+                .ToListAsync();
+
+            return Ok(usuarios);
+        }
     }
 }

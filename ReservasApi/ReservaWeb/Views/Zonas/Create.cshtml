@@ -1,0 +1,32 @@
+﻿@model ReservaWeb.Models.ZonaViewModel
+@{
+    ViewData["Title"] = "Crear Zona";
+}
+
+<div class="container mt-4 col-md-6">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Añadir Nueva Zona</h4>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create" method="post">
+                <div class="mb-3">
+                    <label class="form-label">Nombre de la Zona</label>
+                    <input asp-for="NombreZona" class="form-control" required placeholder="Ej: Terraza VIP" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Capacidad (Personas)</label>
+                    <input asp-for="CapacidadMax" type="number" class="form-control" required min="1" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Precio Mínimo de Consumo</label>
+                    <input asp-for="PrecioMinimo" type="number" step="0.01" class="form-control" required min="0" />
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-success">Guardar Zona</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
