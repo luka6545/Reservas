@@ -1,0 +1,40 @@
+﻿@model IEnumerable<ReservaWeb.Models.CategoriaViewModel>
+@{
+    ViewData["Title"] = "Categorías de Bebidas";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Categorías del Bebidas</h2>
+        <a asp-action="Create" class="btn btn-primary">+ Nueva Categoría</a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-striped align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td><strong>@item.NombreCategoria</strong></td>
+                            <td>@item.Descripcion</td>
+                            <td class="text-center d-flex justify-content-center gap-2">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-warning btn-sm">Editar</a>
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('¿Seguro que deseas eliminar la categoría: @item.NombreCategoria?');">
+                                    <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

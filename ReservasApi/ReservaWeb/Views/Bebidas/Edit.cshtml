@@ -1,0 +1,46 @@
+﻿@model ReservaWeb.Models.BebidaViewModel
+@{
+    ViewData["Title"] = "Editar Bebida";
+}
+
+<div class="container mt-4 col-md-6">
+    <div class="card shadow">
+        <div class="card-header bg-warning">
+            <h4>Modificar Bebida</h4>
+        </div>
+        <div class="card-body">
+            <form asp-action="Edit" method="post">
+                <input type="hidden" asp-for="Id" />
+                <div asp-validation-summary="All" class="text-danger"></div>
+
+                <div class="mb-3">
+                    <label class="form-label">Nombre del Producto</label>
+                    <input asp-for="Nombre" class="form-control" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Categoría</label>
+                    <select asp-for="CategoriaId" class="form-select" asp-items="ViewBag.Categorias" required>
+                        <option value="">-- Selecciona una Categoría --</option>
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Precio (Bs.)</label>
+                        <input asp-for="Precio" type="number" step="0.50" class="form-control" required min="1" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Stock en Barra</label>
+                        <input asp-for="Stock" type="number" class="form-control" required min="0" />
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary">Actualizar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

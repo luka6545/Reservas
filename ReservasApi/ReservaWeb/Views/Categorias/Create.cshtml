@@ -1,0 +1,29 @@
+﻿@model ReservaWeb.Models.CategoriaViewModel
+@{
+    ViewData["Title"] = "Crear Categoría";
+}
+
+<div class="container mt-4 col-md-6">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4>Nueva Categoría</h4>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create" method="post">
+                <div asp-validation-summary="All" class="text-danger"></div>
+                <div class="mb-3">
+                    <label class="form-label">Nombre de la Categoría</label>
+                    <input asp-for="NombreCategoria" class="form-control" required placeholder="Ej: Tequilas, Cervezas..." />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Descripción</label>
+                    <textarea asp-for="Descripcion" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

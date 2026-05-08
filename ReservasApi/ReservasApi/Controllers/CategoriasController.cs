@@ -46,5 +46,37 @@ namespace ReservasApi.Controllers
             await _context.SaveChangesAsync();
             return NoContent();
         }
+        // 1. EL MÉTODO QUE FALTABA: Traer UNA sola categoría para poder editarla
+        [HttpGet("{id}")]
+        public async Task<ActionResult<CategoriaBebida>> GetCategoria(int id)
+        {
+            var categoria = await _context.CategoriasBebidas.FindAsync(id);
+
+            if (categoria == null)
+            {
+                return NotFound();
+            }
+
+            return categoria;
+        }
+
+        // 2. EL MÉTODO PARA ACTUALIZAR (Para asegurarnos de que guarde bien)
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> PutCategoria(int id, CategoriaBebida categoria)
+        {
+            if (id != categoria.Id) return BadRequest("Los IDs no coinciden");
+
+            var categoriaDb = await _context.CategoriasBebidas.FindAsync(id);
+            if (categoriaDb == null) return NotFound();
+
+            // Actualizamos los campos manualmente como hicimos en Zonas
+            categoriaDb.NombreCategoria = categoria.NombreCategoria;
+            categoriaDb.Descripcion = categoria.Descripcion;
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }
