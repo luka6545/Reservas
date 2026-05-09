@@ -183,5 +183,69 @@ namespace ReservaWeb.Services
             var response = await _httpClient.DeleteAsync(_baseUrl + $"Bebidas/{id}");
             return response.IsSuccessStatusCode;
         }
+
+        //--Reservas--//
+        public async Task<List<ReservaViewModel>> GetReservasAsync(string token)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var response = await _httpClient.GetAsync(_baseUrl + "Reservas");
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<List<ReservaViewModel>>(content) ?? new List<ReservaViewModel>();
+            }
+            return new List<ReservaViewModel>();
+        }
+
+        public async Task<bool> CreateReservaAsync(ReservaViewModel reserva, string token)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var content = new StringContent(JsonConvert.SerializeObject(reserva), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync(_baseUrl + "Reservas", content);
+            return response.IsSuccessStatusCode;
+        }
+
+        // Método para que el Admin cambie el estado (Aprobar/Cancelar)
+        public async Task<bool> UpdateEstadoReservaAsync(int id, ReservaViewModel reserva, string token)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var content = new StringContent(JsonConvert.SerializeObject(reserva), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PutAsync(_baseUrl + $"Reservas/{id}", content);
+            return response.IsSuccessStatusCode;
+        }
+        public async Task<ReservaViewModel?> GetReservaByIdAsync(int id, string token)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var response = await _httpClient.GetAsync(_baseUrl + $"Reservas/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<ReservaViewModel>(content);
+            }
+            return null;
+        }
+        // --- MÉTODOS DE PEDIDOS ---
+
+        public async Task<PedidoViewModel?> GetPedidoPorReservaAsync(int reservaId, string token)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var response = await _httpClient.GetAsync(_baseUrl + $"Pedidos/Reserva/{reservaId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<PedidoViewModel>(content);
+            }
+            return null; // Si no hay pedido, devolverá null (la cuenta está en 0)
+        }
+
+        public async Task<bool> CrearPedidoAsync(CrearPedidoViewModel pedido, string token)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(pedido), System.Text.Encoding.UTF8, "application/json");
+
+            var response = await _httpClient.PostAsync(_baseUrl + "Pedidos", content);
+            return response.IsSuccessStatusCode;
+        }
     }
 }

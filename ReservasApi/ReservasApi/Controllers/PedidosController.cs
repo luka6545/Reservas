@@ -2,14 +2,14 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ReservasApi.Data;
-using ReservasApi.Models;
 using ReservasApi.DTOs;
+using ReservasApi.Models;
 
 namespace ReservasApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize] // Protegido por JWT
+    [Authorize]
     public class PedidosController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -19,92 +19,86 @@ namespace ReservasApi.Controllers
             _context = context;
         }
 
-        // POST: api/Pedidos (El cliente hace una orden desde su mesa)
+        // GET: Traer la cuenta completa de la mesa
+        [HttpGet("Reserva/{reservaId}")]
+        public async Task<ActionResult<Pedido>> GetPedidoPorReserva(int reservaId)
+        {
+            var pedido = await _context.Pedidos
+                .Include(p => p.Detalles)
+                .ThenInclude(d => d.Bebida) // Incluimos la bebida para que la Web pueda mostrar "Corona" y no solo "BebidaId: 3"
+                .FirstOrDefaultAsync(p => p.ReservaId == reservaId);
+
+            if (pedido == null) return NotFound("Aún no hay pedidos para esta reserva.");
+
+            return pedido;
+        }
+
+        // POST: Recibir el "Carrito de Compras" del cliente
         [HttpPost]
         public async Task<IActionResult> CrearPedido(CrearPedidoDTO request)
         {
-            // 1. Validar que la reserva exista y no esté cancelada
+            // 1. Validar que la Reserva sea válida para pedir
             var reserva = await _context.Reservas.FindAsync(request.ReservaId);
-            if (reserva == null || reserva.Estado == "Cancelada")
-                return BadRequest("Reserva no válida o cancelada.");
+            if (reserva == null) return NotFound("La reserva no existe.");
+            if (reserva.Estado != "Aprobada") return BadRequest("Solo se pueden hacer pedidos en reservas Aprobadas.");
 
-            // 2. Crear la cabecera del pedido
-            var nuevoPedido = new Pedido
+            if (request.Items == null || !request.Items.Any())
+                return BadRequest("El pedido no contiene ninguna bebida.");
+
+            // 2. Buscar si la mesa ya tiene una cuenta abierta. Si no, la creamos.
+            var pedido = await _context.Pedidos
+                .FirstOrDefaultAsync(p => p.ReservaId == request.ReservaId);
+
+            if (pedido == null)
             {
-                ReservaId = request.ReservaId,
-                FechaPedido = DateTime.Now,
-                Estado = "Preparando",
-                Total = 0 // Lo calcularemos ahora
-            };
-
-            // 3. Procesar cada bebida solicitada
-            foreach (var item in request.Items)
-            {
-                var bebidaDb = await _context.Bebidas.FindAsync(item.BebidaId);
-                if (bebidaDb == null) return NotFound($"La bebida con ID {item.BebidaId} no existe.");
-
-                if (bebidaDb.Stock < item.Cantidad)
-                    return BadRequest($"No hay suficiente stock para {bebidaDb.Nombre}. Stock actual: {bebidaDb.Stock}");
-
-                // Descontar del inventario
-                bebidaDb.Stock -= item.Cantidad;
-
-                // Calcular subtotal
-                var subtotal = bebidaDb.Precio * item.Cantidad;
-                nuevoPedido.Total += subtotal;
-
-                // Agregar el detalle al pedido
-                nuevoPedido.Detalles.Add(new DetallePedido
+                pedido = new Pedido
                 {
-                    BebidaId = item.BebidaId,
-                    Cantidad = item.Cantidad,
-                    Subtotal = subtotal
-                });
+                    ReservaId = request.ReservaId,
+                    FechaPedido = DateTime.Now,
+                    Estado = "Preparando",
+                    Total = 0
+                };
+                _context.Pedidos.Add(pedido);
             }
 
-            // 4. Guardar todo en la base de datos (Pedido, Detalles y actualización de Stock)
-            _context.Pedidos.Add(nuevoPedido);
+            // 3. Procesar el "Carrito" (Recorremos la lista de tus DTOs)
+            foreach (var item in request.Items)
+            {
+                var bebida = await _context.Bebidas.FindAsync(item.BebidaId);
+
+                if (bebida == null)
+                    return NotFound($"La bebida solicitada no existe.");
+
+                if (bebida.Stock < item.Cantidad)
+                    return BadRequest($"Stock insuficiente. Solo quedan {bebida.Stock} unidades de {bebida.Nombre}.");
+
+                // Calculamos el costo de esta línea
+                var subtotal = bebida.Precio * item.Cantidad;
+
+                // Creamos el detalle
+                var detalle = new DetallePedido
+                {
+                    BebidaId = bebida.Id,
+                    Cantidad = item.Cantidad,
+                    Subtotal = subtotal,
+                    Pedido = pedido // Entity Framework enlazará los IDs automáticamente al guardar
+                };
+
+                _context.DetallesPedidos.Add(detalle);
+
+                // 4. MATEMÁTICAS CLAVE: Descontamos inventario y sumamos a la cuenta total
+                bebida.Stock -= item.Cantidad;
+                pedido.Total += subtotal;
+            }
+
+            // 5. Guardar todo en cascada
             await _context.SaveChangesAsync();
 
-            return Ok(new { mensaje = "Pedido registrado con éxito", pedidoId = nuevoPedido.Id, total = nuevoPedido.Total });
-        }
-
-        // GET: api/Pedidos/Reserva/5 (Ver todo lo que se ha pedido en una mesa)
-        [HttpGet("Reserva/{reservaId}")]
-        public async Task<IActionResult> GetPedidosPorReserva(int reservaId)
-        {
-            var pedidos = await _context.Pedidos
-                .Include(p => p.Detalles)
-                .ThenInclude(d => d.Bebida)
-                .Where(p => p.ReservaId == reservaId)
-                .Select(p => new {
-                    p.Id,
-                    p.FechaPedido,
-                    p.Estado,
-                    p.Total,
-                    Detalles = p.Detalles.Select(d => new {
-                        d.Bebida!.Nombre,
-                        d.Cantidad,
-                        d.Subtotal
-                    })
-                })
-                .ToListAsync();
-
-            return Ok(pedidos);
-        }
-
-        // PUT: api/Pedidos/5/Estado (El bartender/admin actualiza si ya se entregó)
-        [HttpPut("{id}/Estado")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CambiarEstadoPedido(int id, [FromBody] string nuevoEstado)
-        {
-            var pedido = await _context.Pedidos.FindAsync(id);
-            if (pedido == null) return NotFound();
-
-            pedido.Estado = nuevoEstado;
-            await _context.SaveChangesAsync();
-
-            return Ok(new { mensaje = $"Estado del pedido actualizado a {nuevoEstado}" });
+            return Ok(new
+            {
+                mensaje = "Pedido procesado con éxito.",
+                totalCuenta = pedido.Total
+            });
         }
     }
 }

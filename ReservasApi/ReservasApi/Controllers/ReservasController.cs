@@ -3,13 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ReservasApi.Data;
 using ReservasApi.Models;
-using ReservasApi.DTOs;
 
 namespace ReservasApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize] // MUY IMPORTANTE: Exige que el usuario esté logueado para usar CUALQUIER método aquí
+    [Authorize] // Solo usuarios con sesión iniciada (Admin o Cliente) pueden acceder
     public class ReservasController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -19,101 +18,75 @@ namespace ReservasApi.Controllers
             _context = context;
         }
 
-        // POST: api/Reservas (El cliente crea una reserva)
-        [HttpPost]
-        public async Task<IActionResult> CrearReserva(CrearReservaDTO request)
+        // GET: api/Reservas
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Reserva>>> GetReservas()
         {
-            // 1. Extraer el ID del usuario directamente del Token JWT de forma segura
-            var usuarioIdString = User.FindFirst("Id")?.Value;
-            if (string.IsNullOrEmpty(usuarioIdString)) return Unauthorized("Token inválido.");
-            int usuarioId = int.Parse(usuarioIdString);
+            // Traemos las reservas con la info de la Zona y del Usuario para no ver solo números
+            return await _context.Reservas
+                .Include(r => r.ZonaLounge)
+                .Include(r => r.Usuario)
+                .ToListAsync();
+        }
 
-            // 2. Validar que la Zona exista
-            var zonaExiste = await _context.ZonasLounge.AnyAsync(z => z.Id == request.ZonaLoungeId);
-            if (!zonaExiste) return NotFound("La zona seleccionada no existe.");
+        // GET: api/Reservas/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Reserva>> GetReserva(int id)
+        {
+            var reserva = await _context.Reservas
+                .Include(r => r.ZonaLounge)
+                .Include(r => r.Usuario)
+                .FirstOrDefaultAsync(r => r.Id == id);
 
-            // 3. Validar que la fecha sea en el futuro
-            if (request.FechaHora <= DateTime.Now)
-                return BadRequest("La reserva debe ser para una fecha y hora futura.");
+            if (reserva == null) return NotFound();
+            return reserva;
+        }
 
-            // 4. Lógica de negocio: Evitar reservas dobles en la misma zona con 2 horas de diferencia
-            var reservaConflicto = await _context.Reservas
-                .Where(r => r.ZonaLoungeId == request.ZonaLoungeId
-                         && r.Estado != "Cancelada")
-                .AnyAsync(r => Math.Abs((r.FechaHora - request.FechaHora).TotalHours) < 2);
+        // POST: Crear Reserva
+        [HttpPost]
+        public async Task<ActionResult<Reserva>> PostReserva(Reserva reserva)
+        {
+            // TRUCO DE SEGURIDAD: Desvinculamos objetos completos para evitar errores de EF Core
+            reserva.Usuario = null;
+            reserva.ZonaLounge = null;
+            reserva.Estado = "Pendiente"; // Por seguridad, siempre nacen como Pendientes
 
-            if (reservaConflicto)
-                return BadRequest("Esta zona ya está reservada para ese horario. Por favor, elige otro.");
-
-            // 5. Crear la reserva
-            var nuevaReserva = new Reserva
-            {
-                UsuarioId = usuarioId,
-                ZonaLoungeId = request.ZonaLoungeId,
-                FechaHora = request.FechaHora,
-                Estado = "Pendiente"
-            };
-
-            _context.Reservas.Add(nuevaReserva);
+            _context.Reservas.Add(reserva);
             await _context.SaveChangesAsync();
 
-            return Ok(new { mensaje = "Reserva creada con éxito", idReserva = nuevaReserva.Id });
+            return CreatedAtAction(nameof(GetReserva), new { id = reserva.Id }, reserva);
         }
 
-        // GET: api/Reservas/MisReservas (El cliente ve su propio historial)
-        [HttpGet("MisReservas")]
-        public async Task<IActionResult> GetMisReservas()
+        // PUT: Actualizar Reserva (ej: El Admin la cambia a "Aprobada" o "Cancelada")
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutReserva(int id, Reserva reserva)
         {
-            var usuarioId = int.Parse(User.FindFirst("Id")!.Value);
+            if (id != reserva.Id) return BadRequest("Los IDs no coinciden");
 
-            var reservas = await _context.Reservas
-                .Include(r => r.ZonaLounge) // Traemos la info de la mesa
-                .Where(r => r.UsuarioId == usuarioId)
-                .OrderByDescending(r => r.FechaHora)
-                .Select(r => new {
-                    r.Id,
-                    Zona = r.ZonaLounge!.NombreZona,
-                    r.FechaHora,
-                    r.Estado
-                })
-                .ToListAsync();
+            var reservaDb = await _context.Reservas.FindAsync(id);
+            if (reservaDb == null) return NotFound();
 
-            return Ok(reservas);
+            // Sincronización manual segura
+            reservaDb.FechaHora = reserva.FechaHora;
+            reservaDb.Estado = reserva.Estado;
+            reservaDb.ZonaLoungeId = reserva.ZonaLoungeId;
+            // OJO: No actualizamos el UsuarioId porque la reserva siempre le pertenece a quien la creó
+
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
 
-        // GET: api/Reservas/Todas (Solo el Admin puede ver todas las reservas del local)
-        [HttpGet("Todas")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetTodasLasReservas()
-        {
-            var reservas = await _context.Reservas
-                .Include(r => r.Usuario)
-                .Include(r => r.ZonaLounge)
-                .OrderBy(r => r.FechaHora)
-                .Select(r => new {
-                    r.Id,
-                    Cliente = r.Usuario!.Nombre,
-                    Zona = r.ZonaLounge!.NombreZona,
-                    r.FechaHora,
-                    r.Estado
-                })
-                .ToListAsync();
-
-            return Ok(reservas);
-        }
-
-        // PUT: api/Reservas/5/Estado (El Admin cambia el estado a Confirmada o Cancelada)
-        [HttpPut("{id}/Estado")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CambiarEstado(int id, [FromBody] string nuevoEstado)
+        // DELETE: Eliminar Reserva
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")] // Solo el Admin puede borrar registros físicamente
+        public async Task<IActionResult> DeleteReserva(int id)
         {
             var reserva = await _context.Reservas.FindAsync(id);
             if (reserva == null) return NotFound();
 
-            reserva.Estado = nuevoEstado;
+            _context.Reservas.Remove(reserva);
             await _context.SaveChangesAsync();
-
-            return Ok(new { mensaje = $"Estado de la reserva actualizado a {nuevoEstado}" });
+            return NoContent();
         }
     }
 }
