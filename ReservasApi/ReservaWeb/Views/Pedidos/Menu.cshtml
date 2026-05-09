@@ -117,6 +117,19 @@
                             <h4 class="text-success mb-0">Total:</h4>
                             <h4 class="text-success fw-bold mb-0">Bs. @cuenta.Total</h4>
                         </div>
+                        @if (cuenta.Estado == "Cobrado")
+                        {
+                            <div class="alert alert-success text-center mt-3 mb-0">Cuenta Pagada ✅</div>
+                            <a asp-controller="Pedidos" asp-action="Factura" asp-route-reservaId="@ViewBag.ReservaId" class="btn btn-danger w-100 mt-2 fw-bold">
+                                📄 Ver Factura PDF
+                            </a>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info text-center mt-3 mb-0 text-dark">
+                                Mesa abierta. Puedes seguir pidiendo.
+                            </div>
+                        }
                     }
                     else
                     {

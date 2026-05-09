@@ -3,51 +3,39 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Lounge Manager</title>
+    <title>@ViewData["Title"] - Lounge VIP</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/ReservaWeb.styles.css" asp-append-version="true" />
 </head>
-<body class="bg-light d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100">
     <header>
-        <nav class="navbar navbar-expand-sm navbar-dark bg-dark border-bottom box-shadow mb-4">
+        <nav class="navbar navbar-expand-sm navbar-light bg-white mb-4 shadow-sm" style="border-bottom: 3px solid #7c3aed;">
             <div class="container">
-                <a class="navbar-brand fw-bold text-warning" asp-area="" asp-controller="Home" asp-action="Index">🥂 ReservaWeb</a>
+                <a class="navbar-brand fw-bold" style="color: #5b21b6;" asp-area="" asp-controller="Home" asp-action="Index">
+                    🥂 LOUNGE VIP
+                </a>
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-
                     <ul class="navbar-nav flex-grow-1">
                         @if (User.Identity != null && User.Identity.IsAuthenticated)
                         {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Home" asp-action="Index">Inicio</a>
-                            </li>
+                            <li class="nav-item"><a class="nav-link text-dark" asp-controller="Home" asp-action="Index">Inicio</a></li>
 
                             @if (User.IsInRole("Admin"))
                             {
-                                <li class="nav-item">
-                                    <a class="nav-link" asp-controller="Zonas" asp-action="Index">Zonas</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" asp-controller="Categorias" asp-action="Index">Categorías</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" asp-controller="Bebidas" asp-action="Index">Bebidas</a>
-                                </li>
-                                <li class="nav-item ms-lg-3">
-                                    <a class="nav-link text-warning fw-bold" asp-controller="Reservas" asp-action="Index">Gestión de Reservas</a>
-                                </li>
+                                <li class="nav-item"><a class="nav-link text-dark" asp-controller="Zonas" asp-action="Index">Zonas</a></li>
+                                <li class="nav-item"><a class="nav-link text-dark" asp-controller="Categorias" asp-action="Index">Categorías</a></li>
+                                <li class="nav-item"><a class="nav-link text-dark" asp-controller="Bebidas" asp-action="Index">Bebidas</a></li>
+                                <li class="nav-item ms-lg-3"><a class="nav-link fw-bold" style="color: #7c3aed;" asp-controller="Reservas" asp-action="Index">Gestión de Reservas</a></li>
                             }
                             else
                             {
-                                <li class="nav-item ms-lg-3">
-                                    <a class="nav-link text-warning fw-bold" asp-controller="Reservas" asp-action="Index">Mis Reservas</a>
-                                </li>
+                                <li class="nav-item ms-lg-3"><a class="nav-link fw-bold" style="color: #7c3aed;" asp-controller="Reservas" asp-action="Index">Mis Reservas</a></li>
                             }
                         }
                     </ul>
@@ -56,7 +44,7 @@
                         @if (User.Identity != null && User.Identity.IsAuthenticated)
                         {
                             <li class="nav-item me-3 d-none d-sm-block">
-                                <span class="text-light">Hola, <strong class="text-warning">@User.Identity.Name</strong></span>
+                                <span class="text-muted">Hola, <strong style="color: #5b21b6;">@User.Identity.Name</strong></span>
                             </li>
                             <li class="nav-item">
                                 <a class="btn btn-outline-danger btn-sm" asp-controller="Account" asp-action="Logout">Cerrar Sesión</a>
@@ -64,12 +52,8 @@
                         }
                         else
                         {
-                            <li class="nav-item me-2">
-                                <a class="nav-link" asp-controller="Account" asp-action="Login">Iniciar Sesión</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="btn btn-warning btn-sm text-dark fw-bold" asp-controller="Account" asp-action="Register">Registrarse</a>
-                            </li>
+                            <li class="nav-item me-2"><a class="nav-link text-dark" asp-controller="Account" asp-action="Login">Iniciar Sesión</a></li>
+                            <li class="nav-item"><a class="btn btn-primary btn-sm" asp-controller="Account" asp-action="Register">Registrarse</a></li>
                         }
                     </ul>
                 </div>
@@ -83,9 +67,9 @@
         </main>
     </div>
 
-    <footer class="border-top footer text-muted bg-white mt-auto py-3 shadow-sm">
+    <footer class="bg-white border-top text-muted mt-auto py-3">
         <div class="container text-center">
-            &copy; @DateTime.Now.Year - Sistema de Gestión ReservaWeb - <a asp-area="" asp-controller="Home" asp-action="Privacy" class="text-decoration-none text-info">Privacidad</a>
+            &copy; @DateTime.Now.Year - Lounge VIP System
         </div>
     </footer>
 

@@ -1,22 +1,131 @@
-html {
-  font-size: 14px;
-}
-
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
+/* =========================================
+   TEMA LOUNGE PREMIUM - BLANCO Y MORADO
+   ========================================= */
 
 body {
-  margin-bottom: 60px;
+    background-color: #f8f7fa; /* Blanco con un levísimo tinte morado */
+    color: #2d3748; /* Texto gris oscuro para no cansar la vista */
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
+
+/* Tarjetas Limpias y Elegantes */
+.card {
+    background: #ffffff !important;
+    border: 1px solid #eae6f2 !important;
+    box-shadow: 0 8px 20px rgba(111, 66, 193, 0.08);
+    border-radius: 12px;
+}
+
+.card-header {
+    background: #ffffff !important;
+    border-bottom: 2px solid #f3f0f8 !important;
+    padding: 1.2rem 1.5rem;
+    color: #553c9a !important; /* Morado Oscuro */
+    font-weight: 600;
+}
+
+/* Botones Premium */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+/* Botón Principal (Morado) */
+.btn-primary, .btn-info {
+    background: linear-gradient(135deg, #7c3aed, #5b21b6) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3);
+}
+
+    .btn-primary:hover, .btn-info:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+    }
+
+/* Botón Aprobado/Pagar (Mantenemos verde pero elegante) */
+.btn-success {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    color: white !important;
+    border: none !important;
+}
+
+/* Botón Advertencia/Menú */
+.btn-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    color: white !important;
+    border: none !important;
+}
+
+.btn-outline-primary {
+    border-color: #7c3aed !important;
+    color: #7c3aed !important;
+}
+
+    .btn-outline-primary:hover {
+        background: #7c3aed !important;
+        color: white !important;
+    }
+
+/* Tablas Blancas y Moradas */
+.table {
+    color: #2d3748 !important;
+}
+
+.table-dark {
+    background: #5b21b6 !important;
+    color: white !important;
+}
+
+.table-light {
+    background: #f8f7fa !important;
+}
+
+.table th {
+    color: #553c9a !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    border-bottom: 2px solid #e9e4f0 !important;
+}
+
+.table td {
+    border-bottom: 1px solid #f3f0f8 !important;
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover td {
+    background-color: #faf9fc !important;
+}
+
+/* Badges (Etiquetas de estado) */
+.badge.bg-success {
+    background-color: #10b981 !important;
+}
+
+.badge.bg-warning {
+    background-color: #f59e0b !important;
+    color: white !important;
+}
+
+.badge.bg-danger {
+    background-color: #ef4444 !important;
+}
+
+.badge.bg-info {
+    background-color: #7c3aed !important;
+}
+/* Reutilizamos el morado aquí */
+
+/* Formularios */
+.form-control {
+    border: 1px solid #d1c7e0;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+}
+
+    .form-control:focus {
+        border-color: #7c3aed;
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+    }

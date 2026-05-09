@@ -78,5 +78,22 @@ namespace ReservaWeb.Controllers
             // Recargamos la misma página para que vea su cuenta actualizada
             return RedirectToAction(nameof(Menu), new { reservaId = reservaId });
         }
+        [HttpGet]
+        public async Task<IActionResult> Factura(int pedidoId, int reservaId)
+        {
+            var token = GetToken();
+            var reserva = await _apiService.GetReservaByIdAsync(reservaId, token);
+
+            // CLAVE: Traemos el ticket específico, no el último de la mesa.
+            var cuenta = await _apiService.GetPedidoByIdAsync(pedidoId, token);
+
+            if (cuenta == null || cuenta.Estado != "Cobrado")
+            {
+                return NotFound("La factura no está disponible o no ha sido pagada.");
+            }
+
+            ViewBag.Reserva = reserva;
+            return View(cuenta);
+        }
     }
 }

@@ -1,115 +1,135 @@
 ﻿@model ReservaWeb.Models.ReservaViewModel
 @{
     ViewData["Title"] = "Detalle de Reserva";
+    // Recibimos las variables exactas que manda el controlador
+    var cuentaAbierta = (ReservaWeb.Models.PedidoViewModel?)ViewBag.CuentaAbierta;
+    var historialPagado = (List<ReservaWeb.Models.PedidoViewModel>?)ViewBag.HistorialPagado ?? new List<ReservaWeb.Models.PedidoViewModel>();
 }
 
 <div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
                 <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">Reserva #@Model.Id</h4>
+                    <h5 class="mb-0">Reserva #@Model.Id</h5>
                     <span class="badge @(Model.Estado == "Aprobada" ? "bg-success" : Model.Estado == "Pendiente" ? "bg-warning text-dark" : "bg-danger")">
                         @Model.Estado
                     </span>
                 </div>
                 <div class="card-body">
-                    <div class="row mb-4">
-                        <div class="col-sm-6">
-                            <h6 class="text-muted">Información del Cliente</h6>
-                            <p><strong>Nombre:</strong> @(Model.Usuario?.Nombre ?? "N/A")</p>
-                            <p><strong>Email:</strong> @(Model.Usuario?.Email ?? "N/A")</p>
-                        </div>
-                        <div class="col-sm-6 border-start">
-                            <h6 class="text-muted">Espacio Reservado</h6>
-                            <p><strong>Zona:</strong> @(Model.ZonaLounge?.NombreZona ?? "N/A")</p>
-                            <p><strong>Fecha y Hora:</strong> @Model.FechaHora.ToString("f")</p>
-                        </div>
-                    </div>
-
-                    @if (User.IsInRole("Admin"))
-                    {
-                        <div class="card mt-4 border-info shadow-sm">
-                            <div class="card-header bg-info text-white fw-bold">
-                                <h5 class="mb-0">Consumo de la Mesa</h5>
-                            </div>
-                            <div class="card-body">
-                                @if (ViewBag.CuentaActual != null)
-                                {
-                                    var cuenta = (ReservaWeb.Models.PedidoViewModel)ViewBag.CuentaActual;
-                                    <table class="table table-sm align-middle">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Cant.</th>
-                                                <th>Bebida</th>
-                                                <th class="text-end">Subtotal</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @{
-                                                // Agrupamos la cuenta en vivo para el Admin
-                                                var cuentaAdmin = (ReservaWeb.Models.PedidoViewModel)ViewBag.CuentaActual;
-                                                var detallesAgrupadosAdmin = cuentaAdmin.Detalles
-                                                .GroupBy(d => d.Bebida?.Nombre ?? "Bebida")
-                                                .Select(g => new
-                                                {
-                                                    Nombre = g.Key,
-                                                    Cantidad = g.Sum(d => d.Cantidad),
-                                                    Subtotal = g.Sum(d => d.Subtotal)
-                                                }).ToList();
-                                            }
-
-                                            @foreach (var item in detallesAgrupadosAdmin)
-                                            {
-                                                <tr>
-                                                    <td><span class="badge bg-secondary">@item.Cantidad</span></td>
-                                                    <td>@item.Nombre</td>
-                                                    <td class="text-end fw-bold">Bs. @item.Subtotal</td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                }
-                                else
-                                {
-                                    <div class="alert alert-light text-center mb-0 text-muted">
-                                        Esta mesa aún no ha ordenado nada.
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="alert alert-secondary mt-4 d-flex justify-content-between align-items-center shadow-sm">
-                            <div>
-                                <h5 class="mb-0">Pedidos a la Mesa</h5>
-                                <p class="mb-0 text-muted">Abre el menú para ordenar bebidas.</p>
-                            </div>
-                            @if (Model.Estado == "Aprobada")
-                            {
-                                <a asp-controller="Pedidos" asp-action="Menu" asp-route-reservaId="@Model.Id" class="btn btn-warning fw-bold text-dark">
-                                    Ver Menú y Pedir
-                                </a>
-                            }
-                            else
-                            {
-                                <button class="btn btn-secondary disabled" title="Requiere que la reserva sea aprobada">Ver Menú (Bloqueado)</button>
-                            }
-                        </div>
-                    }
+                    <h5 class="text-primary fw-bold">@(Model.ZonaLounge?.NombreZona ?? "Sin Zona")</h5>
+                    <p class="text-muted">@Model.FechaHora.ToString("f")</p>
+                    <hr />
+                    <p class="mb-1"><strong>Cliente:</strong> @(Model.Usuario?.Nombre ?? "N/A")</p>
+                    <p class="mb-1"><strong>Email:</strong> @(Model.Usuario?.Email ?? "N/A")</p>
                 </div>
-                <div class="card-footer d-flex justify-content-between">
-                    <a asp-action="Index" class="btn btn-secondary">Volver al Listado</a>
-
+                <div class="card-footer bg-white d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-sm btn-secondary">Volver</a>
                     @if (Model.Estado != "Cancelada")
                     {
-                        <form asp-action="Cancelar" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('¿Estás seguro de que deseas cancelar esta reserva?');">
-                            <button type="submit" class="btn btn-danger">Cancelar Reserva</button>
+                        <form asp-action="Cancelar" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('¿Estás seguro de cancelar esta reserva?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar Reserva</button>
                         </form>
                     }
                 </div>
             </div>
+        </div>
+
+        <div class="col-md-8">
+
+            <div class="card border-primary mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white fw-bold">
+                    🛒 Cuenta Activa (Sin Pagar)
+                </div>
+                <div class="card-body">
+                    @if (cuentaAbierta != null)
+                    {
+                        // Agrupamos visualmente para el Admin/Cliente
+                        var detallesAgrupados = cuentaAbierta.Detalles
+                        .GroupBy(d => d.Bebida?.Nombre ?? "Bebida")
+                        .Select(g => new { Nombre = g.Key, Cantidad = g.Sum(d => d.Cantidad), Subtotal = g.Sum(d => d.Subtotal) });
+
+                        <table class="table table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Cant.</th>
+                                    <th>Bebida</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in detallesAgrupados)
+                                {
+                                    <tr>
+                                        <td><span class="badge bg-secondary">@item.Cantidad</span></td>
+                                        <td>@item.Nombre</td>
+                                        <td class="text-end fw-bold">Bs. @item.Subtotal</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th colspan="2" class="text-end text-primary fs-5">Total a Pagar:</th>
+                                    <th class="text-end text-primary fw-bold fs-5">Bs. @cuentaAbierta.Total</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                        <div class="mt-4">
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <form asp-action="Cobrar" method="post">
+                                    <input type="hidden" name="pedidoId" value="@cuentaAbierta.Id" />
+                                    <input type="hidden" name="reservaId" value="@Model.Id" />
+                                    <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow" onclick="return confirm('¿Confirmas que recibiste el pago de Bs. @cuentaAbierta.Total?');">
+                                        💵 Cobrar Cuenta en Efectivo
+                                    </button>
+                                </form>
+                            }
+                            else if (Model.Estado == "Aprobada")
+                            {
+                                <a asp-controller="Pedidos" asp-action="Menu" asp-route-reservaId="@Model.Id" class="btn btn-warning w-100 fw-bold text-dark">
+                                    ➕ Pedir Más Bebidas
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted my-4">
+                            <p class="mb-3">No hay consumos pendientes de cobro en esta mesa.</p>
+                            @if (!User.IsInRole("Admin") && Model.Estado == "Aprobada")
+                            {
+                                <a asp-controller="Pedidos" asp-action="Menu" asp-route-reservaId="@Model.Id" class="btn btn-warning fw-bold text-dark px-5">
+                                    Abrir Menú y Pedir
+                                </a>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (historialPagado.Any())
+            {
+                <h5 class="mb-3 mt-4 text-secondary fw-bold">📜 Historial de Facturas Pagadas</h5>
+                @foreach (var factura in historialPagado)
+                {
+                    <div class="card mb-2 border-success bg-light shadow-sm">
+                        <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="fw-bold text-dark">Ticket #@factura.Id</span>
+                                <small class="text-muted ms-2">Pagado a las @factura.FechaPedido.ToString("HH:mm")</small>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span class="me-3 fw-bold text-success fs-5">Bs. @factura.Total</span>
+                                <a asp-controller="Pedidos" asp-action="Factura" asp-route-pedidoId="@factura.Id" asp-route-reservaId="@Model.Id" class="btn btn-sm btn-danger fw-bold">
+                                    📄 PDF
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
         </div>
     </div>
 </div>

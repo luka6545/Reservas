@@ -247,5 +247,36 @@ namespace ReservaWeb.Services
             var response = await _httpClient.PostAsync(_baseUrl + "Pedidos", content);
             return response.IsSuccessStatusCode;
         }
+        public async Task<bool> CobrarPedidoAsync(int pedidoId, string token)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            // Enviamos un PUT vacío porque el ID ya va en la URL
+            var response = await _httpClient.PutAsync(_baseUrl + $"Pedidos/Cobrar/{pedidoId}", null);
+            return response.IsSuccessStatusCode;
+        }
+        public async Task<List<PedidoViewModel>> GetHistorialPedidosAsync(int reservaId, string token)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var response = await _httpClient.GetAsync(_baseUrl + $"Pedidos/Reserva/{reservaId}/Historial");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<List<PedidoViewModel>>(content) ?? new List<PedidoViewModel>();
+            }
+            return new List<PedidoViewModel>();
+        }
+        public async Task<PedidoViewModel?> GetPedidoByIdAsync(int pedidoId, string token)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var response = await _httpClient.GetAsync(_baseUrl + $"Pedidos/{pedidoId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<PedidoViewModel>(content);
+            }
+            return null;
+        }
     }
 }

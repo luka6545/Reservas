@@ -137,23 +137,22 @@ namespace ReservaWeb.Controllers
             ViewBag.Zonas = new SelectList(zonas, "Id", "NombreZona", model.ZonaLoungeId);
             return View(model);
         }
-        // GET: Ver Detalles de la reserva
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
             var token = GetToken();
-
-            // 1. Traemos la reserva
             var reserva = await _apiService.GetReservaByIdAsync(id, token);
             if (reserva == null) return NotFound();
 
-            // 2. Traemos la cuenta actual (Pedido) de esa reserva para que el Admin la vea
-            var cuenta = await _apiService.GetPedidoPorReservaAsync(id, token);
-            ViewBag.CuentaActual = cuenta;
+            // Traemos todos los pedidos de la noche
+            var todosLosPedidos = await _apiService.GetHistorialPedidosAsync(id, token);
+
+            // Separamos la cuenta actual (abierta) de los recibos ya pagados
+            ViewBag.CuentaAbierta = todosLosPedidos.FirstOrDefault(p => p.Estado != "Cobrado");
+            ViewBag.HistorialPagado = todosLosPedidos.Where(p => p.Estado == "Cobrado").ToList();
 
             return View(reserva);
         }
-
         // POST: El Admin aprueba la reserva
         [HttpPost]
         [Authorize(Roles = "Admin")]
@@ -198,6 +197,13 @@ namespace ReservaWeb.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Cobrar(int pedidoId, int reservaId)
+        {
+            await _apiService.CobrarPedidoAsync(pedidoId, GetToken());
+            return RedirectToAction(nameof(Details), new { id = reservaId });
         }
     }
 }

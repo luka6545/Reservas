@@ -1,0 +1,169 @@
+﻿@model ReservaWeb.Models.PedidoViewModel
+@{
+    Layout = null; // Sin navbar para que el PDF salga limpio
+    var reserva = (ReservaWeb.Models.ReservaViewModel)ViewBag.Reserva;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <title>Factura - Lounge VIP</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        /* Estilos Premium Blanco y Morado EXCLUSIVOS para el PDF */
+        body {
+            background-color: #f8f7fa;
+            color: #2d3748;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        .factura-container {
+            background-color: #ffffff;
+            border: 1px solid #eae6f2;
+            border-radius: 12px;
+            padding: 3rem;
+            box-shadow: 0 8px 20px rgba(111, 66, 193, 0.08);
+        }
+
+        .texto-morado {
+            color: #5b21b6;
+        }
+
+        .tabla-factura th {
+            border-bottom: 2px solid #e9e4f0;
+            color: #553c9a;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .tabla-factura td {
+            border-bottom: 1px solid #f3f0f8;
+            padding: 1rem 0;
+            color: #2d3748;
+        }
+
+        .btn-descargar {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            box-shadow: 0 4px 10px rgba(124, 58, 237, 0.3);
+            text-decoration: none;
+        }
+
+            .btn-descargar:hover {
+                filter: brightness(1.1);
+                color: white;
+            }
+
+        .btn-volver {
+            border: 1px solid #7c3aed;
+            color: #7c3aed;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+            .btn-volver:hover {
+                background: #7c3aed;
+                color: white;
+            }
+    </style>
+</head>
+<body class="d-flex justify-content-center py-5">
+
+    <div class="container" style="max-width: 800px;">
+
+        <div class="d-flex justify-content-between mb-4" id="controles">
+            <a href="javascript:history.back()" class="btn-volver">Volver</a>
+            <button onclick="descargarPDF()" class="btn-descargar">⬇️ Descargar PDF Oficial</button>
+        </div>
+
+        <div class="factura-container" id="documento-pdf">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-4 mb-4">
+                <div>
+                    <h2 class="fw-bold texto-morado mb-0" style="letter-spacing: -1px;">🥂 LOUNGE VIP</h2>
+                    <p class="text-muted mb-0">Comprobante de Consumo</p>
+                </div>
+                <div class="text-end">
+                    <h5 class="texto-morado mb-0">Ticket #@Model.Id</h5>
+                    <p class="text-muted mb-0">@Model.FechaPedido.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+            </div>
+
+            <div class="row mb-5">
+                <div class="col-sm-6">
+                    <p class="text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.8rem;">Facturar a:</p>
+                    <h5 class="fw-bold mb-0">@(reserva?.Usuario?.Nombre ?? "Cliente")</h5>
+                    <p class="text-muted">Mesa: @(reserva?.ZonaLounge?.NombreZona ?? "General")</p>
+                </div>
+            </div>
+
+            <table class="table tabla-factura mb-5">
+                <thead>
+                    <tr>
+                        <th width="10%">Cant.</th>
+                        <th width="60%">Descripción del Consumo</th>
+                        <th width="30%" class="text-end">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Detalles)
+                    {
+                        <tr>
+                            <td class="fw-bold text-center">@item.Cantidad</td>
+                            <td>@(item.Bebida?.Nombre)</td>
+                            <td class="text-end fw-bold">Bs. @item.Subtotal</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="d-flex justify-content-end border-top pt-4">
+                <div style="width: 300px;">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted fw-bold">Subtotal:</span>
+                        <span>Bs. @Model.Total</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                        <h4 class="fw-bold mb-0 texto-morado">TOTAL PAGADO</h4>
+                        <h3 class="fw-bold mb-0 texto-morado">Bs. @Model.Total</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-5 pt-5 text-muted" style="font-size: 0.85rem;">
+                <p>Este documento es un comprobante de pago válido.<br>Gracias por su preferencia.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function descargarPDF() {
+            // Ocultamos los botones web para que no salgan en el PDF
+            document.getElementById('controles').style.display = 'none';
+
+            var elemento = document.getElementById('documento-pdf');
+            var opciones = {
+                margin:       0.5,
+                filename:     'Factura_Lounge_' + @Model.Id + '.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, backgroundColor: "#ffffff" }, // Forzamos fondo blanco puro en el PDF
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            // Generar y descargar
+            html2pdf().set(opciones).from(elemento).save().then(function() {
+                // Restaurar botones
+                document.getElementById('controles').style.display = 'flex';
+            });
+        }
+    </script>
+</body>
+</html>

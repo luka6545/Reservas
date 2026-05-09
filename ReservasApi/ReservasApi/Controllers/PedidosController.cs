@@ -23,10 +23,13 @@ namespace ReservasApi.Controllers
         [HttpGet("Reserva/{reservaId}")]
         public async Task<ActionResult<Pedido>> GetPedidoPorReserva(int reservaId)
         {
+            // CLAVE: Ordenamos de forma descendente y tomamos el primero (el más reciente)
             var pedido = await _context.Pedidos
                 .Include(p => p.Detalles)
-                .ThenInclude(d => d.Bebida) // Incluimos la bebida para que la Web pueda mostrar "Corona" y no solo "BebidaId: 3"
-                .FirstOrDefaultAsync(p => p.ReservaId == reservaId);
+                .ThenInclude(d => d.Bebida)
+                .Where(p => p.ReservaId == reservaId)
+                .OrderByDescending(p => p.Id)
+                .FirstOrDefaultAsync();
 
             if (pedido == null) return NotFound("Aún no hay pedidos para esta reserva.");
 
@@ -47,7 +50,7 @@ namespace ReservasApi.Controllers
 
             // 2. Buscar si la mesa ya tiene una cuenta abierta. Si no, la creamos.
             var pedido = await _context.Pedidos
-                .FirstOrDefaultAsync(p => p.ReservaId == request.ReservaId);
+     .FirstOrDefaultAsync(p => p.ReservaId == request.ReservaId && p.Estado != "Cobrado");
 
             if (pedido == null)
             {
@@ -99,6 +102,45 @@ namespace ReservasApi.Controllers
                 mensaje = "Pedido procesado con éxito.",
                 totalCuenta = pedido.Total
             });
+        }
+        // PUT: api/Pedidos/Cobrar/5
+        [HttpPut("Cobrar/{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CobrarPedido(int id)
+        {
+            var pedido = await _context.Pedidos.FindAsync(id);
+            if (pedido == null) return NotFound("Pedido no encontrado.");
+
+            pedido.Estado = "Cobrado";
+            await _context.SaveChangesAsync();
+
+            return Ok(new { mensaje = "Cuenta cobrada exitosamente." });
+        }
+        // GET: api/Pedidos/Reserva/5/Historial
+        // Este método trae TODOS los pedidos de una mesa (Pagados y Sin Pagar)
+        [HttpGet("Reserva/{reservaId}/Historial")]
+        public async Task<ActionResult<IEnumerable<Pedido>>> GetHistorialPedidos(int reservaId)
+        {
+            var pedidos = await _context.Pedidos
+                .Include(p => p.Detalles)
+                .ThenInclude(d => d.Bebida)
+                .Where(p => p.ReservaId == reservaId)
+                .OrderByDescending(p => p.Id) // Los más recientes primero
+                .ToListAsync();
+
+            return Ok(pedidos);
+        }
+        // GET: api/Pedidos/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Pedido>> GetPedido(int id)
+        {
+            var pedido = await _context.Pedidos
+                .Include(p => p.Detalles)
+                .ThenInclude(d => d.Bebida)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (pedido == null) return NotFound();
+            return Ok(pedido);
         }
     }
 }
